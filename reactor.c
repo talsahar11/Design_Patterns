@@ -11,9 +11,9 @@ void insert(struct Reactor *reactor, int key, handler_t value)
 }
 
 // Function to retrieve the value associated with a given key
-handler_t get(struct Reactor *reactor, int key)
+handler_t get(struct Reactor *reactor, int index)
 {
-    int index = key % reactor->pollsize;
+//    printf("Hash: index = %d = key / poolsize = %d / %d \n", index, reactor->pollsize) ;
     return reactor->map->array[index].value;
 }
 
@@ -114,7 +114,7 @@ void addFd(void *this, int fd, handler_t handler)
     
         reactor->pfds[reactor->fdscount].fd = fd;
         reactor->pfds[reactor->fdscount].events = POLLIN;
-        insert(reactor, fd, handler);
+        insert(reactor, reactor->fdscount, handler);
         reactor->fdscount++;
     
 }
@@ -128,7 +128,7 @@ void *threadFunc(void *this)
     while (reactor->is_running)
     {
         // printf("Thread running%d\n", reactor->fdscount) ;
-        int poll_count = poll(reactor->pfds, reactor->fdscount, 2);
+        int poll_count = poll(reactor->pfds, reactor->fdscount, 0);
         //  printf("Thread running%d\n", poll_count) ;
         if (poll_count == -1)
         {
@@ -140,7 +140,8 @@ void *threadFunc(void *this)
         {
             if (reactor->pfds[i].revents && POLLIN)
             {
-                current_handler = get(reactor, reactor->pfds[i].fd);
+                current_handler = get(reactor, i);
+                printf("Received shit from ------ %p\n", current_handler) ;
                 current_handler(this, reactor->pfds[i].fd);
             }
         }

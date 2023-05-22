@@ -11,7 +11,6 @@ struct KeyValue {
 
 struct HashMap {
     struct KeyValue *array;
-    int size;
 };
 
 struct Reactor {
