@@ -2,105 +2,183 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-// Function to initialize the hashmap
-void initializeHashMap(struct Reactor* reactor) {
-    reactor->map.array = (struct KeyValue *)malloc(DEFAULT_POLL_SIZE * sizeof(struct KeyValue));
-}
-
 // Function to insert a key-value pair into the hashmap
-void insert(struct Reactor *reactor, int key, handler_t value) {
-    int index = key % reactor->pollsize ;
-    reactor->map.array[index].key = key;
-    reactor->map.array[index].value = value;
+void insert(struct Reactor *reactor, int key, handler_t value)
+{
+    int index = key % reactor->pollsize;
+    reactor->map->array[index].key = key;
+    reactor->map->array[index].value = value;
 }
 
 // Function to retrieve the value associated with a given key
-handler_t get(struct Reactor *reactor, int key) {
-    int index = key % reactor->pollsize ;
-    return reactor->map.array[index].value;
+handler_t get(struct Reactor *reactor, int key)
+{
+    int index = key % reactor->pollsize;
+    return reactor->map->array[index].value;
 }
-
 
 // Function to delete a key-value pair from the hashmap
-void removeKey(struct Reactor *reactor, int key) {
+void removeKey(struct Reactor *reactor, int key)
+{
     int index = key % reactor->pollsize;
-    reactor->map.array[index].key = -1; // Assuming -1 is not a valid key
+    reactor->map->array[index].key = -1; // Assuming -1 is not a valid key
 }
 
-void* createReactor(){
-    struct Reactor *reactor = malloc(sizeof(struct Reactor)) ;
-    reactor->pfds = malloc(sizeof(struct pollfd) * DEFAULT_POLL_SIZE);
-    initializeHashMap(reactor) ;
+
+ // Constructor function for Reactor
+void* createReactor() {
+    struct Reactor* reactor = (struct Reactor*)malloc(sizeof(struct Reactor));
+
+    if (reactor == NULL) {
+        fprintf(stderr, "Memory allocation failed for Reactor!\n");
+        return NULL;
+    }
+
+    reactor->pfds = (struct pollfd*)malloc(DEFAULT_POLL_SIZE * sizeof(struct pollfd));
+    if (reactor->pfds == NULL) {
+        fprintf(stderr, "Memory allocation failed for pfds!\n");
+        free(reactor);
+        return NULL;
+    }
+
+    reactor->map = (struct HashMap*)malloc(sizeof(struct HashMap));
+    if (reactor->map == NULL) {
+        fprintf(stderr, "Memory allocation failed for map!\n");
+        free(reactor->pfds);
+        free(reactor);
+        return NULL;
+    }
+
+    reactor->map->array = (struct KeyValue*)malloc(DEFAULT_POLL_SIZE * sizeof(struct KeyValue));
+    if (reactor->map->array == NULL) {
+        fprintf(stderr, "Memory allocation failed for map->array!\n");
+        free(reactor->pfds);
+        free(reactor->map);
+        free(reactor);
+        return NULL;
+    }
+
+    reactor->fdscount = 0;
+    reactor->pollsize = DEFAULT_POLL_SIZE;
+
+    reactor->is_running = 0;
+    reactor->threadfunc = NULL;
+
+    return reactor;
 }
 
-void resize(struct Reactor *reactor){
-    reactor->pollsize *= 2 ;
-    reactor->pfds = realloc(reactor->pfds, reactor->pollsize * sizeof(struct pollfd)) ;
-    reactor->map.array = realloc(reactor->map.array, reactor->pollsize * sizeof(struct KeyValue)) ;
+int resize(struct Reactor* reactor) {
+    int newSize = reactor->pollsize*2 ;
+    // Resize pfds
+    struct pollfd* newPfds = (struct pollfd*)realloc(reactor->pfds, newSize * sizeof(struct pollfd));
+    if (newPfds == NULL) {
+        fprintf(stderr, "Memory reallocation failed for pfds!\n");
+        return 0; // Return 0 to indicate failure
+    }
+    reactor->pfds = newPfds;
+
+    // Resize map
+    struct KeyValue* newArray = (struct KeyValue*)realloc(reactor->map->array, newSize * sizeof(struct KeyValue));
+    if (newArray == NULL) {
+        fprintf(stderr, "Memory reallocation failed for map->array!\n");
+        return 0; // Return 0 to indicate failure
+    }
+    reactor->map->array = newArray;
+    reactor->pollsize = newSize ;
+    printf("RESIZEEEEEEE%d\n",reactor->pollsize);
+    return 1; // Return 1 to indicate success
 }
 
-void deleteFd(struct Reactor *reactor, int fd){
-    for(int i = 0 ; i < reactor->fdscount ; i++){
-        if(reactor->pfds[i].fd == fd){
-            reactor->pfds[i] = reactor->pfds[reactor->fdscount-1] ;
-            reactor->fdscount-- ;
-            return ;
+void deleteFd(struct Reactor *reactor, int fd)
+{
+    for (int i = 0; i < reactor->fdscount; i++)
+    {
+        if (reactor->pfds[i].fd == fd)
+        {
+            reactor->pfds[i] = reactor->pfds[reactor->fdscount - 1];
+            reactor->fdscount--;
+            return;
         }
     }
-    printf("Failed to delete fd from pfds.\n") ;
+    printf("Failed to delete fd from pfds.\n");
 }
 
-void addFd(void* this, int fd, handler_t handler){
-    struct Reactor *reactor = (struct Reactor*)this ;
-    if(reactor->fdscount == reactor->pollsize){
-        resize(reactor) ;
-    }else{
-        reactor->pfds[reactor->fdscount].fd = fd ;
-        reactor->pfds[reactor->fdscount].events = POLLIN ;
-        insert(reactor, fd, handler) ;
-        reactor->fdscount++ ;
+void addFd(void *this, int fd, handler_t handler)
+{
+    struct Reactor *reactor = (struct Reactor *)this;
+    printf("Adding fd %d\n", fd);
+    if (reactor->fdscount == reactor->pollsize)
+    {
+        resize(reactor);
     }
+    
+        reactor->pfds[reactor->fdscount].fd = fd;
+        reactor->pfds[reactor->fdscount].events = POLLIN;
+        insert(reactor, fd, handler);
+        reactor->fdscount++;
+    
 }
 
-void* threadFunc(void* this){
-    struct Reactor *reactor = (struct Reactor*)this ;
-    handler_t current_handler ;
-    while(reactor->is_running){
-        int poll_count = poll(reactor->pfds, reactor->fdscount, -1);
-        if (poll_count == -1) {
+void *threadFunc(void *this)
+{
+    printf("shitass\n");
+
+    struct Reactor *reactor = (struct Reactor *)this;
+    handler_t current_handler;
+    while (reactor->is_running)
+    {
+        // printf("Thread running%d\n", reactor->fdscount) ;
+        int poll_count = poll(reactor->pfds, reactor->fdscount, 2);
+        //  printf("Thread running%d\n", poll_count) ;
+        if (poll_count == -1)
+        {
             perror("poll");
             exit(1);
         }
-        for(int i = 0 ; i < reactor->fdscount ; i++){
-            if(reactor->pfds[i].revents && POLLIN){
+        //  printf("fdcount : %d", reactor->fdscount);
+        for (int i = 0; i < reactor->fdscount; i++)
+        {
+            if (reactor->pfds[i].revents && POLLIN)
+            {
                 current_handler = get(reactor, reactor->pfds[i].fd);
-                current_handler(this, reactor->pfds[i].fd) ;
+                current_handler(this, reactor->pfds[i].fd);
             }
         }
     }
 
-    return NULL ;
+    return NULL;
 }
 
+void startReactor(void *this)
+{
+    printf("shitass\n");
+    struct Reactor *reactor = (struct Reactor*)this;
+    
+    if (reactor->is_running != 1)
+    {
+    printf("shitass\n");
 
-void startReactor(void* this){
-    struct Reactor *reactor = (struct Reactor*)this ;
-    if(reactor->is_running != 1) {
         reactor->is_running = 1;
-        int result = pthread_create(&(reactor->thread), NULL, threadFunc, reactor) ;
-        if (result != 0) {
-            perror("Thread: ") ;
+    printf("shitass\n");
+
+        int result = pthread_create(&(reactor->thread), NULL, threadFunc, reactor);
+    printf("shitass\n");
+
+        if (result != 0)
+        {
+            perror("Thread: ");
         }
     }
 }
 
-void stopReactor(void* this){
-    struct Reactor *reactor = (struct Reactor*)this ;
-    reactor->is_running = 0 ;
+void stopReactor(void *this)
+{
+    struct Reactor *reactor = (struct Reactor *)this;
+    reactor->is_running = 0;
 }
 
-void waitFor(void* this){
-    struct Reactor *reactor = (struct Reactor*)this ;
-    pthread_join(reactor->thread, NULL) ;
+void waitFor(void *this)
+{
+    struct Reactor *reactor = (struct Reactor *)this;
+    pthread_join(reactor->thread, NULL);
 }
-

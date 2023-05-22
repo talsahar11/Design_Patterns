@@ -1,7 +1,7 @@
 #include <poll.h>
 #include <pthread.h>
 
-#define DEFAULT_POLL_SIZE 10
+#define DEFAULT_POLL_SIZE 2
 
 typedef void (*handler_t)(void*, int) ;
 struct KeyValue {
@@ -16,7 +16,7 @@ struct HashMap {
 
 struct Reactor {
     struct pollfd* pfds ;
-    struct HashMap map ;
+    struct HashMap* map ;
     pthread_t thread ;
     int fdscount ;
     int pollsize ;
