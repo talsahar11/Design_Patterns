@@ -1,0 +1,5 @@
+
+all: reactor.so
+
+reactor.so: reactor.c
+	gcc -shared -fPIC -o libreactor.so reactor.c
