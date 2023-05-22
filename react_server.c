@@ -2,13 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
 #include <netdb.h>
-#include <poll.h>
-#include "reactor.h"
+#include "st_reactor.h"
 
 #define PORT "9034"   // Port we're listening on
 
@@ -105,7 +102,6 @@ int accept_socket(int listener){
     struct sockaddr_storage remoteaddr; // Client address
     socklen_t addrlen;
     addrlen = sizeof remoteaddr;
-    printf("Shit\n") ;
     newfd = accept(listener,
                    (struct sockaddr *)&remoteaddr,
                    &addrlen);
@@ -113,7 +109,6 @@ int accept_socket(int listener){
     if (newfd == -1) {
         perror("accept");
     } else {
-        printf("New connection established: %d\n", newfd) ;
         return newfd ;
     }
     return -1 ;
@@ -137,6 +132,5 @@ int main(void)
     for(;;) {
         newfd = accept_socket(listener);
         addFd(reactor, newfd, &clients_handler) ;
-        printf("fdcount %d",reactor->fdscount);
     }
 }

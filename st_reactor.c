@@ -1,4 +1,4 @@
-#include "reactor.h"
+#include "st_reactor.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -85,7 +85,6 @@ int resize(struct Reactor* reactor) {
     }
     reactor->map->array = newArray;
     reactor->pollsize = newSize ;
-    printf("RESIZEEEEEEE%d\n",reactor->pollsize);
     return 1; // Return 1 to indicate success
 }
 
@@ -106,7 +105,6 @@ void deleteFd(struct Reactor *reactor, int fd)
 void addFd(void *this, int fd, handler_t handler)
 {
     struct Reactor *reactor = (struct Reactor *)this;
-    printf("Adding fd %d\n", fd);
     if (reactor->fdscount == reactor->pollsize)
     {
         resize(reactor);
@@ -121,8 +119,6 @@ void addFd(void *this, int fd, handler_t handler)
 
 void *threadFunc(void *this)
 {
-    printf("shitass\n");
-
     struct Reactor *reactor = (struct Reactor *)this;
     handler_t current_handler;
     while (reactor->is_running)
@@ -141,7 +137,6 @@ void *threadFunc(void *this)
             if (reactor->pfds[i].revents && POLLIN)
             {
                 current_handler = get(reactor, i);
-                printf("Received shit from ------ %p\n", current_handler) ;
                 current_handler(this, reactor->pfds[i].fd);
             }
         }
@@ -152,19 +147,11 @@ void *threadFunc(void *this)
 
 void startReactor(void *this)
 {
-    printf("shitass\n");
     struct Reactor *reactor = (struct Reactor*)this;
-    
     if (reactor->is_running != 1)
     {
-    printf("shitass\n");
-
         reactor->is_running = 1;
-    printf("shitass\n");
-
         int result = pthread_create(&(reactor->thread), NULL, threadFunc, reactor);
-    printf("shitass\n");
-
         if (result != 0)
         {
             perror("Thread: ");

@@ -1,11 +1,15 @@
 
 #export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:.
 
-all: server
+all: react_server
 
-server: Server.c reactor.so
-	gcc -c Server.c -o server.o
-	gcc server.o -o server -L. -lreactor -pthread
+react_server: react_server.c st_reactor.so
+	gcc -c react_server.c -o react_server.o
+	gcc react_server.o -o react_server -L. ./st_reactor.so -pthread
+	rm react_server.o
 
-reactor.so: reactor.c
-	gcc -shared -fPIC -o libreactor.so reactor.c
+st_reactor.so: st_reactor.c
+	gcc -shared -fPIC -Wl,--soname=st_reactor.so -o st_reactor.so st_reactor.c
+
+clean:
+	rm st_reactor.so react_server
