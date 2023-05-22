@@ -3,7 +3,7 @@
 
 #define DEFAULT_POLL_SIZE 10
 
-typedef void* (*handler_t)(void* args) ;
+typedef void (*handler_t)() ;
 struct KeyValue {
     int key;
     handler_t value;
@@ -18,7 +18,6 @@ struct Reactor {
     struct pollfd* pfds ;
     struct HashMap map ;
     pthread_t thread ;
-    int listenerfd ;
     int fdscount ;
     int pollsize ;
     int is_running ;

@@ -69,15 +69,10 @@ void* threadFunc(void* this){
         for(int i = 0 ; i < reactor->fdscount ; i++){
             if(reactor->pfds[i].revents && POLLIN){
                 current_handler = get(reactor, reactor->pfds[i].fd);
-                if(reactor->pfds[i].fd == reactor->listenerfd){
-                    int* newFD = current_handler(&(reactor->listenerfd)) ;
-                    addFd(this, newFD, )
-                }else {
-                    current_handler(NULL);
-                }
             }
         }
     }
+
     return NULL ;
 }
 
