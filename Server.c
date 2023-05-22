@@ -34,7 +34,8 @@ void clients_handler(void* this, int fd) {
 
     } else {
         // We got some good data from a client
-        printf("Data: %s", buf) ;
+        printf("%s", buf) ;
+        memset(buf,0,256);
     }
 } // END handle data from client
 
@@ -104,6 +105,7 @@ int accept_socket(int listener){
     struct sockaddr_storage remoteaddr; // Client address
     socklen_t addrlen;
     addrlen = sizeof remoteaddr;
+    printf("Shit\n") ;
     newfd = accept(listener,
                    (struct sockaddr *)&remoteaddr,
                    &addrlen);
@@ -111,6 +113,7 @@ int accept_socket(int listener){
     if (newfd == -1) {
         perror("accept");
     } else {
+        printf("New connection established: %d\n", newfd) ;
         return newfd ;
     }
     return -1 ;
@@ -127,11 +130,13 @@ int main(void)
         fprintf(stderr, "error getting listening socket\n");
         exit(1);
     }
-
+    // printf("1: %d, 2 %d, 3 %p, 4 %p\n", reactor->fdscount, reactor->is_running, reactor->map, reactor->pfds) ;
+    startReactor(reactor);
     int newfd ;
     // Main loop
     for(;;) {
         newfd = accept_socket(listener);
         addFd(reactor, newfd, &clients_handler) ;
+        printf("fdcount %d",reactor->fdscount);
     }
 }

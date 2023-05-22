@@ -1,4 +1,6 @@
 
+#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:.
+
 all: server
 
 server: Server.c reactor.so
