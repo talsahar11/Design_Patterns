@@ -123,15 +123,12 @@ void *threadFunc(void *this)
     handler_t current_handler;
     while (reactor->is_running)
     {
-        // printf("Thread running%d\n", reactor->fdscount) ;
         int poll_count = poll(reactor->pfds, reactor->fdscount, 0);
-        //  printf("Thread running%d\n", poll_count) ;
         if (poll_count == -1)
         {
             perror("poll");
             exit(1);
         }
-        //  printf("fdcount : %d", reactor->fdscount);
         for (int i = 0; i < reactor->fdscount; i++)
         {
             if (reactor->pfds[i].revents && POLLIN)

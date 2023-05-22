@@ -1,6 +1,3 @@
-
-#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:.
-
 all: react_server
 
 react_server: react_server.c st_reactor.so

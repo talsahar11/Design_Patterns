@@ -125,7 +125,6 @@ int main(void)
         fprintf(stderr, "error getting listening socket\n");
         exit(1);
     }
-    // printf("1: %d, 2 %d, 3 %p, 4 %p\n", reactor->fdscount, reactor->is_running, reactor->map, reactor->pfds) ;
     startReactor(reactor);
     int newfd ;
     // Main loop
