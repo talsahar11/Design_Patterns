@@ -9,10 +9,11 @@
 #include <netdb.h>
 #include <poll.h>
 #include "reactor.h"
+
 #define PORT "9034"   // Port we're listening on
 
 
-void clients_handler(int fd) {
+void clients_handler(void* this, int fd) {
     char buf[256];    // Buffer for client data
     int nbytes = recv(fd, buf, sizeof buf, 0);
 
@@ -29,25 +30,14 @@ void clients_handler(int fd) {
 
         close(fd); // Bye!
 
-        delete_Fd(pfds, i, &fd_count);
+        deleteFd(this, fd) ;
 
     } else {
         // We got some good data from a client
-
-        for(int j = 0; j < fd_count; j++) {
-            // Send to everyone!
-            int dest_fd = pfds[j].fd;
-
-            // Except the listener and ourselves
-            if (dest_fd != listener && dest_fd != sender_fd) {
-                if (send(dest_fd, buf, nbytes, 0) == -1) {
-                    perror("send");
-                }
-            }
-        }
+        printf("Data: %s", buf) ;
     }
 } // END handle data from client
-}
+
 // Get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
 {
@@ -141,53 +131,7 @@ int main(void)
     int newfd ;
     // Main loop
     for(;;) {
-        int poll_count = poll(pfds, fd_count, -1);
-
-        if (poll_count == -1) {
-            perror("poll");
-            exit(1);
-        }
-
-        newfd = accept_socket(listener) ;
-        addFd(reactor, newfd, )
-                } else {
-                    // If not the listener, we're just a regular client
-                    int nbytes = recv(pfds[i].fd, buf, sizeof buf, 0);
-
-                    int sender_fd = pfds[i].fd;
-
-                    if (nbytes <= 0) {
-                        // Got error or connection closed by client
-                        if (nbytes == 0) {
-                            // Connection closed
-                            printf("pollserver: socket %d hung up\n", sender_fd);
-                        } else {
-                            perror("recv");
-                        }
-
-                        close(pfds[i].fd); // Bye!
-
-                        del_from_pfds(pfds, i, &fd_count);
-
-                    } else {
-                        // We got some good data from a client
-
-                        for(int j = 0; j < fd_count; j++) {
-                            // Send to everyone!
-                            int dest_fd = pfds[j].fd;
-
-                            // Except the listener and ourselves
-                            if (dest_fd != listener && dest_fd != sender_fd) {
-                                if (send(dest_fd, buf, nbytes, 0) == -1) {
-                                    perror("send");
-                                }
-                            }
-                        }
-                    }
-                } // END handle data from client
-            } // END got ready-to-read from poll()
-        } // END looping through file descriptors
-    } // END for(;;)--and you thought it would never end!
-
-    return 0;
+        newfd = accept_socket(listener);
+        addFd(reactor, newfd, &clients_handler) ;
+    }
 }

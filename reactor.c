@@ -66,9 +66,15 @@ void* threadFunc(void* this){
     struct Reactor *reactor = (struct Reactor*)this ;
     handler_t current_handler ;
     while(reactor->is_running){
+        int poll_count = poll(reactor->pfds, reactor->fdscount, -1);
+        if (poll_count == -1) {
+            perror("poll");
+            exit(1);
+        }
         for(int i = 0 ; i < reactor->fdscount ; i++){
             if(reactor->pfds[i].revents && POLLIN){
                 current_handler = get(reactor, reactor->pfds[i].fd);
+                current_handler(this, reactor->pfds[i].fd) ;
             }
         }
     }

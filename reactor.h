@@ -3,7 +3,7 @@
 
 #define DEFAULT_POLL_SIZE 10
 
-typedef void (*handler_t)() ;
+typedef void (*handler_t)(void*, int) ;
 struct KeyValue {
     int key;
     handler_t value;
@@ -29,3 +29,4 @@ void stopReactor(void* this) ;
 void startReactor(void* this) ;
 void addFd(void* this, int fd, handler_t handler) ;
 void waitFor(void* this) ;
+void deleteFd(struct Reactor *reactor, int fd) ;
